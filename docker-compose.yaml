@@ -1,0 +1,18 @@
+version: '3.8'
+services:
+  todo-app-db:
+    container_name: todo-app-db
+    image: postgres
+    restart: always
+    environment:
+      - POSTGRES_HOST=todo-app-db
+      - POSTGRES_USER=username
+      - POSTGRES_PASSWORD=password
+      - POSTGRES_DB=todo-app
+    ports:
+      - '5432:5432'
+    volumes:
+      - todo-app_db:/var/lib/todo-app-postgresql/data
+volumes:
+  todo-app_db:
+    driver: local
