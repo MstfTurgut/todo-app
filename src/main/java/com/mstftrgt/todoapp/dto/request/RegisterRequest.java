@@ -12,10 +12,10 @@ import lombok.NoArgsConstructor;
 public class RegisterRequest {
 
     @NotBlank
-    @Size(min = 8, max = 16,message = "Username length must be 8 to 16 characters long.")
+    @Size(min = 8, max = 16,message = "The username length must be between 8 and 16 characters.")
     private String username;
 
     @NotBlank
-    @Size(min = 8, max = 16,message = "Password length must be 8 to 16 characters long.")
+    @Size(min = 8, max = 16,message = "The password length must be between 8 and 16 characters.")
     private String password;
 }
