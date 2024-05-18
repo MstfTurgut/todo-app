@@ -47,7 +47,6 @@ public class ItemService {
 
     }
 
-
     public ItemDto createItem(NewItemRequest itemRequest, String listId, String userId) {
 
         listService.findListById(listId, userId);
@@ -83,18 +82,24 @@ public class ItemService {
 
         findById(itemId);
 
-        List<DependencyEntity> dependencyEntityList = dependencyRepository.findByItemId(itemId);
+        if(changeStatusRequest.getStatus() == true) {
 
-        dependencyEntityList
-                .forEach(dependencyEntity -> {
+            List<DependencyEntity> dependencyEntityList = dependencyRepository.findByItemId(itemId);
 
-                    Optional<ItemEntity> dependentItemOptional =
-                            itemRepository.findById(dependencyEntity.getDependentItemId());
-                    if(dependentItemOptional.isEmpty())
-                        throw new DependentItemNotFoundException("Dependent item not found.");
-                    if(!dependentItemOptional.get().getStatus())
-                        throw new CannotMarkItemCompletedBeforeTheDependentItemException("This item has dependency to other items, mark them first.");
-                });
+            dependencyEntityList
+                    .forEach(dependencyEntity -> {
+
+                        Optional<ItemEntity> dependentItemOptional =
+                                itemRepository.findById(dependencyEntity.getDependentItemId());
+
+                        if(dependentItemOptional.isEmpty())
+                            throw new DependentItemNotFoundException("Dependent item not found.");
+
+                        if(dependentItemOptional.get().getStatus() == false)
+                            throw new CannotMarkItemCompletedBeforeTheDependentItemException("This item has dependency to other items, mark them first.");
+                    });
+
+        }
 
         itemRepository.updateItemStatusByItemId(changeStatusRequest.getStatus(), itemId);
     }
