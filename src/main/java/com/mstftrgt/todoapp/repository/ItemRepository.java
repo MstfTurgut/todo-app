@@ -1,6 +1,5 @@
 package com.mstftrgt.todoapp.repository;
 
-
 import com.mstftrgt.todoapp.entity.ItemEntity;
 import jakarta.transaction.Transactional;
 import org.springframework.data.jpa.repository.JpaRepository;
@@ -13,11 +12,10 @@ public interface ItemRepository extends JpaRepository<ItemEntity, String> {
 
     List<ItemEntity> findByListId(String listId);
 
-    @Transactional
     @Modifying
+    @Transactional
     @Query(nativeQuery = true, value = "update item set status = ?1 where id = ?2")
     void updateItemStatusByItemId(boolean status, String itemId);
 
     void deleteAllByListId(String listId);
-
 }

@@ -1,7 +1,7 @@
 package com.mstftrgt.todoapp.exception;
 
 public class ItemNotFoundException extends RuntimeException{
-    public ItemNotFoundException(String message) {
-        super(message);
+    public ItemNotFoundException(String itemId) {
+        super("Item not found by id : " + itemId);
     }
 }

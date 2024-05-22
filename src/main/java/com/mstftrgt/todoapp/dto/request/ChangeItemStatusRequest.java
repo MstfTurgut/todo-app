@@ -10,4 +10,8 @@ import lombok.NoArgsConstructor;
 public class ChangeItemStatusRequest {
 
     private Boolean status;
+
+    public boolean isMarked() {
+        return status;
+    }
 }

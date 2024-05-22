@@ -2,7 +2,7 @@ package com.mstftrgt.todoapp.exception;
 
 public class UsernameAlreadyInUseException extends RuntimeException {
 
-    public UsernameAlreadyInUseException(String message) {
-        super(message);
+    public UsernameAlreadyInUseException() {
+        super("This username is taken.");
     }
 }

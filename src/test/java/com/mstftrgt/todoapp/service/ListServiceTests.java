@@ -5,12 +5,15 @@ import com.mstftrgt.todoapp.dto.request.NewListRequest;
 import com.mstftrgt.todoapp.entity.ListEntity;
 import com.mstftrgt.todoapp.exception.ListAlreadyExistsException;
 import com.mstftrgt.todoapp.exception.ListNotFoundException;
-import com.mstftrgt.todoapp.exception.UsernameAlreadyInUseException;
-import com.mstftrgt.todoapp.repository.ItemRepository;
 import com.mstftrgt.todoapp.repository.ListRepository;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
-import org.mockito.*;
+import org.mockito.ArgumentCaptor;
+import org.mockito.Captor;
+import org.mockito.Mock;
+import org.mockito.Mockito;
+import org.mockito.internal.verification.Times;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.modelmapper.ModelMapper;
 
@@ -29,7 +32,7 @@ public class ListServiceTests {
     private ListRepository listRepository;
 
     @Mock
-    private ItemRepository itemRepository;
+    private ItemService itemService;
 
     @Mock
     private ModelMapper modelMapper;
@@ -37,8 +40,13 @@ public class ListServiceTests {
     @Captor
     private ArgumentCaptor<ListEntity> listCaptor;
 
-    @InjectMocks
     private ListService listService;
+
+    @BeforeEach
+    void setUp() {
+        ListValidateService listValidateService = Mockito.spy(new ListValidateService(listRepository));
+        listService = new ListService(modelMapper, itemService, listRepository, listValidateService);
+    }
 
     @Test
     void shouldGetAllListEntities_whenRequested() {
@@ -92,7 +100,7 @@ public class ListServiceTests {
         listService.deleteList(listId, userId);
 
         Mockito.verify(listRepository).findById(listId);
-        Mockito.verify(itemRepository).deleteAllByListId(listId);
+        Mockito.verify(itemService).deleteAllByListId(listId);
         Mockito.verify(listRepository).delete(listEntity);
     }
 
@@ -108,7 +116,8 @@ public class ListServiceTests {
                 .hasMessageContaining("List not found for id : " + listId);
 
         Mockito.verify(listRepository).findById(listId);
-        Mockito.verifyNoInteractions(itemRepository);
+        Mockito.verifyNoInteractions(itemService);
+        Mockito.verify(listRepository, new Times(0)).delete(Mockito.any(ListEntity.class));
     }
 
     @Test
@@ -125,7 +134,7 @@ public class ListServiceTests {
                 .hasMessageContaining("List not found for id : " + listId);
 
         Mockito.verify(listRepository).findById(listId);
-        Mockito.verifyNoInteractions(itemRepository);
+        Mockito.verify(listRepository, new Times(0)).delete(Mockito.any(ListEntity.class));
     }
 
     @Test

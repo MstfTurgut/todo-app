@@ -4,30 +4,35 @@ import com.mstftrgt.todoapp.dto.request.NewDependencyRequest;
 import com.mstftrgt.todoapp.entity.DependencyEntity;
 import com.mstftrgt.todoapp.exception.DependencyLoopException;
 import com.mstftrgt.todoapp.repository.DependencyRepository;
+import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
+import java.util.List;
 import java.util.Optional;
 
 @Service
+@RequiredArgsConstructor
 public class DependencyService {
 
+    private final ItemValidateService itemValidateService;
     private final DependencyRepository dependencyRepository;
-    private final ItemService itemService;
 
-    public DependencyService(DependencyRepository dependencyRepository, ItemService itemService) {
-        this.dependencyRepository = dependencyRepository;
-        this.itemService = itemService;
+    public List<DependencyEntity> findAllByItemId(String itemId) {
+        return dependencyRepository.findAllByItemId(itemId);
     }
 
-    public void addDependency(NewDependencyRequest newDependencyRequest, String itemId) {
+    public void deleteAllByItemIdOrDependentItemId(String itemId) {
+        dependencyRepository.deleteAllByItemIdOrDependentItemId(itemId, itemId);
+    }
 
-        itemService.findById(itemId);
+    public void add(NewDependencyRequest newDependencyRequest, String itemId) {
+        itemValidateService.findAndValidateById(itemId);
 
-        Optional<DependencyEntity> dependencyEntityOptional = dependencyRepository
-                .findByItemIdAndDependentItemId(newDependencyRequest.getDependentItemId(), itemId);
+        Optional<DependencyEntity> dependencyEntityOptional = dependencyRepository.findByItemIdAndDependentItemId(newDependencyRequest.getDependentItemId(), itemId);
 
-        if(dependencyEntityOptional.isPresent())
-            throw new DependencyLoopException("Cannot create dependency, this dependency causing a dependency loop.");
+        if (dependencyEntityOptional.isPresent()) {
+            throw new DependencyLoopException();
+        }
 
         DependencyEntity dependencyEntity = DependencyEntity.builder()
                 .itemId(itemId)

@@ -8,7 +8,11 @@ import com.mstftrgt.todoapp.exception.UsernameAlreadyInUseException;
 import com.mstftrgt.todoapp.repository.UserRepository;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
-import org.mockito.*;
+import org.mockito.ArgumentCaptor;
+import org.mockito.Captor;
+import org.mockito.InjectMocks;
+import org.mockito.Mock;
+import org.mockito.Mockito;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.modelmapper.ModelMapper;
 import org.springframework.security.authentication.AuthenticationManager;
@@ -22,15 +26,17 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
-
 @ExtendWith(MockitoExtension.class)
 public class AuthenticationServiceTests {
     @Mock
     private UserRepository userRepository;
+
     @Mock
     private PasswordEncoder passwordEncoder;
+
     @Mock
     private AuthenticationManager authenticationManager;
+
     @Mock
     private ModelMapper modelMapper;
 
@@ -39,7 +45,6 @@ public class AuthenticationServiceTests {
 
     @InjectMocks
     private AuthenticationService authenticationService;
-
 
     @Test
     void shouldRegisterNewUser_whenTheRequestIsValidAndUsernameNotTaken() {

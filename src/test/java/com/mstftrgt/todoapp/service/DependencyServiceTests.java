@@ -16,7 +16,7 @@ import org.mockito.Mock;
 import org.mockito.Mockito;
 import org.mockito.internal.verification.Times;
 import org.mockito.junit.jupiter.MockitoExtension;
-import org.modelmapper.ModelMapper;
+
 import java.time.LocalDateTime;
 import java.util.Optional;
 
@@ -31,11 +31,6 @@ public class DependencyServiceTests {
 
     @Mock
     private ItemRepository itemRepository;
-    @Mock
-    private ListService listService;
-
-    @Mock
-    private ModelMapper modelMapper;
 
     @Captor
     private ArgumentCaptor<DependencyEntity> dependencyCaptor;
@@ -44,8 +39,8 @@ public class DependencyServiceTests {
 
     @BeforeEach
     void setUp() {
-        ItemService itemService = Mockito.spy(new ItemService(itemRepository, dependencyRepository, listService, modelMapper));
-        dependencyService = new DependencyService(dependencyRepository, itemService);
+        ItemValidateService itemValidateService = Mockito.spy(new ItemValidateService(itemRepository));
+        dependencyService = new DependencyService(itemValidateService, dependencyRepository);
     }
 
 
@@ -59,7 +54,7 @@ public class DependencyServiceTests {
 
         Mockito.when(itemRepository.findById(itemId)).thenReturn(Optional.of(itemEntity));
 
-        dependencyService.addDependency(newDependencyRequest, itemId);
+        dependencyService.add(newDependencyRequest, itemId);
 
         Mockito.verify(itemRepository).findById(itemId);
 
@@ -76,7 +71,7 @@ public class DependencyServiceTests {
 
         Mockito.when(itemRepository.findById(itemId)).thenReturn(Optional.empty());
 
-        assertThatThrownBy(() -> dependencyService.addDependency(newDependencyRequest, itemId))
+        assertThatThrownBy(() -> dependencyService.add(newDependencyRequest, itemId))
                 .isInstanceOf(ItemNotFoundException.class)
                 .hasMessageContaining("Item not found by id : " + itemId);
 
@@ -97,7 +92,7 @@ public class DependencyServiceTests {
         Mockito.when(itemRepository.findById(itemId)).thenReturn(Optional.of(itemEntity));
         Mockito.when(dependencyRepository.findByItemIdAndDependentItemId(newDependencyRequest.getDependentItemId(), itemId)).thenReturn(Optional.of(dependencyEntity));
 
-        assertThatThrownBy(() -> dependencyService.addDependency(newDependencyRequest, itemId))
+        assertThatThrownBy(() -> dependencyService.add(newDependencyRequest, itemId))
                 .isInstanceOf(DependencyLoopException.class)
                 .hasMessageContaining("Cannot create dependency, this dependency causing a dependency loop.");
 

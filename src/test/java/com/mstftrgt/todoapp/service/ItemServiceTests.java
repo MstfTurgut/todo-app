@@ -7,10 +7,8 @@ import com.mstftrgt.todoapp.entity.DependencyEntity;
 import com.mstftrgt.todoapp.entity.ItemEntity;
 import com.mstftrgt.todoapp.entity.ListEntity;
 import com.mstftrgt.todoapp.exception.CannotMarkItemCompletedBeforeTheDependentItemException;
-import com.mstftrgt.todoapp.exception.DependentItemNotFoundException;
 import com.mstftrgt.todoapp.exception.ItemNotFoundException;
 import com.mstftrgt.todoapp.exception.ListNotFoundException;
-import com.mstftrgt.todoapp.repository.DependencyRepository;
 import com.mstftrgt.todoapp.repository.ItemRepository;
 import com.mstftrgt.todoapp.repository.ListRepository;
 import org.junit.jupiter.api.BeforeEach;
@@ -39,10 +37,11 @@ public class ItemServiceTests {
     private ItemRepository itemRepository;
 
     @Mock
-    private DependencyRepository dependencyRepository;
+    private DependencyService dependencyService;
 
     @Mock
     private ListRepository listRepository;
+
     @Mock
     private ModelMapper modelMapper;
 
@@ -53,10 +52,10 @@ public class ItemServiceTests {
 
     @BeforeEach
     void setUp() {
-        ListService listService = Mockito.spy(new ListService(listRepository, itemRepository, modelMapper));
-        itemService = new ItemService(itemRepository, dependencyRepository, listService, modelMapper);
+        ListValidateService listValidateService = Mockito.spy(new ListValidateService(listRepository));
+        ItemValidateService itemValidateService = Mockito.spy(new ItemValidateService(itemRepository));
+        itemService = new ItemService(modelMapper, itemRepository, dependencyService, itemValidateService, listValidateService);
     }
-
 
     @Test
     void shouldGetAllItemsOfList_whenListIsFoundAndUserIdMatches() {
@@ -77,19 +76,19 @@ public class ItemServiceTests {
         ItemDto itemDto1 = new ItemDto("1", "Egg", true, LocalDateTime.now().minusDays(20), LocalDateTime.now().minusDays(30), listId);
         ItemDto itemDto2 = new ItemDto("2", "Defter", true, LocalDateTime.now().minusDays(20), LocalDateTime.now().minusDays(30), listId);
 
-        List<ItemDto> itemDtos = new ArrayList<>();
+        List<ItemDto> itemDtoList = new ArrayList<>();
 
-        itemDtos.add(itemDto1);
-        itemDtos.add(itemDto2);
+        itemDtoList.add(itemDto1);
+        itemDtoList.add(itemDto2);
 
         Mockito.when(listRepository.findById(listId)).thenReturn(Optional.of(listEntity));
         Mockito.when(itemRepository.findByListId(listId)).thenReturn(itemEntities);
         Mockito.when(modelMapper.map(itemEntity1, ItemDto.class)).thenReturn(itemDto1);
         Mockito.when(modelMapper.map(itemEntity2, ItemDto.class)).thenReturn(itemDto2);
 
-        List<ItemDto> result = itemService.getAllItemsByListId(listId, userId);
+        List<ItemDto> result = itemService.getAllByListId(listId, userId);
 
-        assertThat(result).isEqualTo(itemDtos);
+        assertThat(result).isEqualTo(itemDtoList);
 
         Mockito.verify(listRepository).findById(listId);
         Mockito.verify(itemRepository).findByListId(listId);
@@ -105,7 +104,7 @@ public class ItemServiceTests {
 
         Mockito.when(listRepository.findById(listId)).thenReturn(Optional.empty());
 
-        assertThatThrownBy(() -> itemService.getAllItemsByListId(listId, userId))
+        assertThatThrownBy(() -> itemService.getAllByListId(listId, userId))
                 .isInstanceOf(ListNotFoundException.class)
                 .hasMessageContaining("List not found for id : " + listId);
 
@@ -128,7 +127,7 @@ public class ItemServiceTests {
 
         Mockito.when(listRepository.findById(listId)).thenReturn(Optional.of(listEntity));
 
-        assertThatThrownBy(() -> itemService.getAllItemsByListId(listId, userId))
+        assertThatThrownBy(() -> itemService.getAllByListId(listId, userId))
                 .isInstanceOf(ListNotFoundException.class)
                 .hasMessageContaining("List not found for id : " + listId);
 
@@ -154,7 +153,7 @@ public class ItemServiceTests {
         Mockito.when(itemRepository.save(Mockito.any(ItemEntity.class))).thenReturn(savedItem);
         Mockito.when(modelMapper.map(savedItem, ItemDto.class)).thenReturn(itemDto);
 
-        ItemDto result = itemService.createItem(itemRequest, listId, userId);
+        ItemDto result = itemService.create(itemRequest, listId, userId);
 
         assertThat(result).isEqualTo(itemDto);
 
@@ -182,7 +181,7 @@ public class ItemServiceTests {
 
         Mockito.when(listRepository.findById(listId)).thenReturn(Optional.empty());
 
-        assertThatThrownBy(() -> itemService.createItem(itemRequest, listId, userId))
+        assertThatThrownBy(() -> itemService.create(itemRequest, listId, userId))
                 .isInstanceOf(ListNotFoundException.class)
                 .hasMessageContaining("List not found for id : " + listId);
 
@@ -205,7 +204,7 @@ public class ItemServiceTests {
 
         Mockito.when(listRepository.findById(listId)).thenReturn(Optional.of(listEntity));
 
-        assertThatThrownBy(() -> itemService.createItem(itemRequest, listId, userId))
+        assertThatThrownBy(() -> itemService.create(itemRequest, listId, userId))
                 .isInstanceOf(ListNotFoundException.class)
                 .hasMessageContaining("List not found for id : " + listId);
 
@@ -225,7 +224,7 @@ public class ItemServiceTests {
         Mockito.when(itemRepository.findById(itemId)).thenReturn(Optional.of(itemEntity));
         Mockito.when(modelMapper.map(itemEntity, ItemDto.class)).thenReturn(itemDto);
 
-        ItemDto result = itemService.getItemById(itemId);
+        ItemDto result = itemService.getById(itemId);
 
         assertThat(result).isEqualTo(itemDto);
 
@@ -241,7 +240,7 @@ public class ItemServiceTests {
 
         Mockito.when(itemRepository.findById(itemId)).thenReturn(Optional.empty());
 
-        assertThatThrownBy(() -> itemService.getItemById(itemId))
+        assertThatThrownBy(() -> itemService.getById(itemId))
                 .isInstanceOf(ItemNotFoundException.class)
                 .hasMessageContaining("Item not found by id : " + itemId);
 
@@ -258,10 +257,10 @@ public class ItemServiceTests {
 
         Mockito.when(itemRepository.findById(itemId)).thenReturn(Optional.of(itemEntity));
 
-        itemService.deleteItem(itemId);
+        itemService.deleteById(itemId);
 
         Mockito.verify(itemRepository).findById(itemId);
-        Mockito.verify(dependencyRepository).deleteAllByItemIdOrDependentItemId(itemId, itemId);
+        Mockito.verify(dependencyService).deleteAllByItemIdOrDependentItemId(itemId);
         Mockito.verify(itemRepository).delete(itemEntity);
     }
 
@@ -272,12 +271,12 @@ public class ItemServiceTests {
 
         Mockito.when(itemRepository.findById(itemId)).thenReturn(Optional.empty());
 
-        assertThatThrownBy(() -> itemService.deleteItem(itemId))
+        assertThatThrownBy(() -> itemService.deleteById(itemId))
                 .isInstanceOf(ItemNotFoundException.class)
                 .hasMessageContaining("Item not found by id : " + itemId);
 
         Mockito.verify(itemRepository).findById(itemId);
-        Mockito.verifyNoInteractions(dependencyRepository);
+        Mockito.verifyNoInteractions(dependencyService);
     }
 
     @Test
@@ -291,7 +290,7 @@ public class ItemServiceTests {
 
         Mockito.when(itemRepository.findById(itemId)).thenReturn(Optional.of(itemEntity));
 
-        itemService.updateItemStatus(changeStatusRequest, itemId);
+        itemService.updateStatus(changeStatusRequest, itemId);
 
         Mockito.verify(itemRepository).findById(itemId);
         Mockito.verify(itemRepository).updateItemStatusByItemId(changeStatusRequest.getStatus(), itemId);
@@ -318,14 +317,14 @@ public class ItemServiceTests {
         ItemEntity dependentItem2 = new ItemEntity(dependentItemId2, "Milk", true, LocalDateTime.now().plusDays(30), LocalDateTime.now().minusDays(30), "listId");
 
         Mockito.when(itemRepository.findById(itemId)).thenReturn(Optional.of(itemEntity));
-        Mockito.when(dependencyRepository.findByItemId(itemId)).thenReturn(dependencyEntityList);
+        Mockito.when(dependencyService.findAllByItemId(itemId)).thenReturn(dependencyEntityList);
         Mockito.when(itemRepository.findById(dependentItemId1)).thenReturn(Optional.of(dependentItem1));
         Mockito.when(itemRepository.findById(dependentItemId2)).thenReturn(Optional.of(dependentItem2));
 
-        itemService.updateItemStatus(changeStatusRequest, itemId);
+        itemService.updateStatus(changeStatusRequest, itemId);
 
         Mockito.verify(itemRepository).findById(itemId);
-        Mockito.verify(dependencyRepository).findByItemId(itemId);
+        Mockito.verify(dependencyService).findAllByItemId(itemId);
         Mockito.verify(itemRepository).findById(dependentItemId1);
         Mockito.verify(itemRepository).findById(dependentItemId2);
         Mockito.verify(itemRepository).updateItemStatusByItemId(changeStatusRequest.getStatus(), itemId);
@@ -350,16 +349,16 @@ public class ItemServiceTests {
         ItemEntity dependentItem1 = new ItemEntity(dependentItemId1, "Flour", true, LocalDateTime.now().plusDays(30), LocalDateTime.now().minusDays(30), "listId");
 
         Mockito.when(itemRepository.findById(itemId)).thenReturn(Optional.of(itemEntity));
-        Mockito.when(dependencyRepository.findByItemId(itemId)).thenReturn(dependencyEntityList);
+        Mockito.when(dependencyService.findAllByItemId(itemId)).thenReturn(dependencyEntityList);
         Mockito.when(itemRepository.findById(dependentItemId1)).thenReturn(Optional.of(dependentItem1));
         Mockito.when(itemRepository.findById(dependentItemId2)).thenReturn(Optional.empty());
 
-        assertThatThrownBy(() -> itemService.updateItemStatus(changeStatusRequest, itemId))
-                .isInstanceOf(DependentItemNotFoundException.class)
-                .hasMessageContaining("Dependent item not found.");
+        assertThatThrownBy(() -> itemService.updateStatus(changeStatusRequest, itemId))
+                .isInstanceOf(ItemNotFoundException.class)
+                .hasMessageContaining("Item not found by id : " + dependentItemId2);
 
         Mockito.verify(itemRepository).findById(itemId);
-        Mockito.verify(dependencyRepository).findByItemId(itemId);
+        Mockito.verify(dependencyService).findAllByItemId(itemId);
         Mockito.verify(itemRepository).findById(dependentItemId1);
         Mockito.verify(itemRepository).findById(dependentItemId2);
         Mockito.verify(itemRepository, new Times(0)).updateItemStatusByItemId(changeStatusRequest.getStatus(), itemId);
@@ -387,16 +386,16 @@ public class ItemServiceTests {
         ItemEntity dependentItem2 = new ItemEntity(dependentItemId2, "Milk", false, LocalDateTime.now().plusDays(30), LocalDateTime.now().minusDays(30), "listId");
 
         Mockito.when(itemRepository.findById(itemId)).thenReturn(Optional.of(itemEntity));
-        Mockito.when(dependencyRepository.findByItemId(itemId)).thenReturn(dependencyEntityList);
+        Mockito.when(dependencyService.findAllByItemId(itemId)).thenReturn(dependencyEntityList);
         Mockito.when(itemRepository.findById(dependentItemId1)).thenReturn(Optional.of(dependentItem1));
         Mockito.when(itemRepository.findById(dependentItemId2)).thenReturn(Optional.of(dependentItem2));
 
-        assertThatThrownBy(() -> itemService.updateItemStatus(changeStatusRequest, itemId))
+        assertThatThrownBy(() -> itemService.updateStatus(changeStatusRequest, itemId))
                 .isInstanceOf(CannotMarkItemCompletedBeforeTheDependentItemException.class)
                 .hasMessageContaining("This item has dependency to other items, mark them first.");
 
         Mockito.verify(itemRepository).findById(itemId);
-        Mockito.verify(dependencyRepository).findByItemId(itemId);
+        Mockito.verify(dependencyService).findAllByItemId(itemId);
         Mockito.verify(itemRepository).findById(dependentItemId1);
         Mockito.verify(itemRepository).findById(dependentItemId2);
         Mockito.verify(itemRepository, new Times(0)).updateItemStatusByItemId(changeStatusRequest.getStatus(), itemId);
@@ -411,12 +410,12 @@ public class ItemServiceTests {
 
         Mockito.when(itemRepository.findById(itemId)).thenReturn(Optional.empty());
 
-        assertThatThrownBy(() -> itemService.updateItemStatus(changeStatusRequest, itemId))
+        assertThatThrownBy(() -> itemService.updateStatus(changeStatusRequest, itemId))
                 .isInstanceOf(ItemNotFoundException.class)
                 .hasMessageContaining("Item not found by id : " + itemId);
 
         Mockito.verify(itemRepository, new Times(1)).findById(itemId);
-        Mockito.verifyNoInteractions(dependencyRepository);
+        Mockito.verifyNoInteractions(dependencyService);
         Mockito.verify(itemRepository, new Times(0)).updateItemStatusByItemId(changeStatusRequest.getStatus(), itemId);
 
     }
