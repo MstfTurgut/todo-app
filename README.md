@@ -24,6 +24,9 @@ A to-do application that allows users to manage their tasks and lists, track pro
 
 ## Screenshots
 
+**The following screenshots provide a visual overview of the application's UI mockup and some design decisions.**
+
+
 ![todo-app](https://github.com/user-attachments/assets/3f93bca5-4e3a-4868-88ba-96e6612a4679)
 
 ![tables](https://github.com/user-attachments/assets/f286ce78-06a4-4ab3-9eff-ddd69b56cd5d)
