@@ -10,9 +10,8 @@ A to-do application that allows users to manage their tasks and lists, track pro
 1) User Authentication
 - **Register:** Create a new user account by providing a username, and password.
 - **Login:** Log in with your username and password to access your to-do lists.
-- **Logout:** Log out of your account securely.
 2) Task Management
-- **Create Lists: Organize tasks by creating multiple to-do lists.
+- **Create Lists:** Organize tasks by creating multiple to-do lists.
 - **Add Items:** Add tasks to each list with properties such as priority and status.
 - **Update Tasks:** Edit task details such as name, description, or status.
 - **Delete Items:** Remove tasks from the list if they are no longer needed.
@@ -57,7 +56,7 @@ A to-do application that allows users to manage their tasks and lists, track pro
 
 3) Set up the Docker containers:
 
-       mvn clean install
+       docker-compose up --build
 
 4) Access the app in your browser:
 
