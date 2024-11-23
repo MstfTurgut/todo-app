@@ -51,7 +51,7 @@ A to-do application that allows users to manage their tasks and lists, track pro
 
 1) Clone the repository:
 
-       git clone https://github.com/your-username/todo-app.git
+       git clone https://github.com/MstfTurgut/todo-app.git
 
 2) Build the project with Maven:
 
